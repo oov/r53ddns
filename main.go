@@ -2,12 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
-	"github.com/ccding/go-stun/stun"
 	"github.com/crowdmob/goamz/aws"
+	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"time"
 )
 
@@ -16,10 +20,11 @@ type Store struct {
 }
 
 var (
-	zoneID = flag.String("zone", "", "hosted zone id")
-	domain = flag.String("domain", "", "domain ex: ddns.example.org.")
-	ttl    = flag.Int("ttl", 600, "TTL")
-	delay  = flag.Int("delay", 20, "how long to wait before GetChange")
+	zoneID     = flag.String("zone", "", "hosted zone id")
+	domain     = flag.String("domain", "", "domain ex: ddns.example.org.")
+	ttl        = flag.Int("ttl", 600, "TTL")
+	delay      = flag.Int("delay", 20, "how long to wait before GetChange")
+	ipDetector = flag.String("ip", "http://checkip.dyndns.org/", "public ip address detector")
 )
 
 func load(path string) (*Store, error) {
@@ -48,6 +53,26 @@ func save(path string, s *Store) error {
 	return json.NewEncoder(f).Encode(s)
 }
 
+func discoverPublicIP() (string, error) {
+	r, err := http.Get(*ipDetector)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return "", err
+	}
+
+	found := regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`).Find(buf)
+	ip := net.ParseIP(string(found))
+	if ip == nil {
+		return "", errors.New("could not detect valid ipv4 address")
+	}
+	return ip.String(), nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -62,16 +87,16 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("latest global ip is:", stored.IP)
+	log.Println("latest public ip is:", stored.IP)
 
-	log.Println("discovering my global ip...")
-	_, host, err := stun.Discover()
+	log.Println("discovering my public ip...")
+	publicIP, err := discoverPublicIP()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("global ip is:", host.Ip())
+	log.Println("public ip is:", publicIP)
 
-	if stored.IP == host.Ip() {
+	if stored.IP == publicIP {
 		log.Println("no changed found.")
 		return
 	}
@@ -104,7 +129,7 @@ func main() {
 				Name:  *domain,
 				Type:  "A",
 				TTL:   *ttl,
-				Value: host.Ip(),
+				Value: publicIP,
 			},
 		},
 	})
@@ -142,7 +167,7 @@ func main() {
 
 	log.Println("update completed")
 
-	stored.IP = host.Ip()
+	stored.IP = publicIP
 	err = save(storedPath, stored)
 	if err != nil {
 		log.Fatalln(err)
