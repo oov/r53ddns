@@ -3,6 +3,13 @@ r53ddns
 
 It is an Amazon Route 53 Dynamic DNS updater program.
 
+Install
+-------
+
+```bash
+go get -u github.com/oov/r53ddns
+```
+
 Usage
 -----
 
