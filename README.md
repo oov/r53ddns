@@ -13,9 +13,9 @@ go get -u github.com/oov/r53ddns
 Usage
 -----
 
-1. Create "Hosted Zone" and insert A record on Route 53. (d53ddns does not support new A record creation, update only)
+1. Create "Hosted Zone" and insert A record on Route 53. (r53ddns does not support new A record creation, update only)
 2. Create IAM user and configure user policies.
-3. Execute d53ddns.
+3. Execute r53ddns.
 
 ```bash
 env AWS_ACCESS_KEY_ID=YOUR-ACCESS-KEY AWS_SECRET_ACCESS_KEY=YOUR-SECRET-KEY r53ddns --zone=YOUR-ZONE-ID --domain=ddns.example.org.
