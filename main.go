@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"github.com/crowdmob/goamz/aws"
+	"github.com/oov/r53ddns/route53"
 	"io/ioutil"
 	"log"
 	"net"
@@ -105,7 +106,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	r53 := NewRoute53(auth)
+	r53 := route53.New(auth)
 
 	log.Println("route53: call ListResourceRecordSets")
 	lrrsr, err := r53.ListResourceRecordSets(*zoneID, map[string]string{
@@ -118,14 +119,14 @@ func main() {
 	}
 
 	log.Println("route53: call ChangeResourceRecordSets")
-	crrsr, err := r53.ChangeResourceRecordSets(*zoneID, []ChangeResourceRecord{
+	crrsr, err := r53.ChangeResourceRecordSets(*zoneID, []route53.ChangeResourceRecord{
 		{
 			Action: "DELETE",
 			RRSet:  lrrsr.RRSets[0],
 		},
 		{
 			Action: "CREATE",
-			RRSet: ResourceRecordSet{
+			RRSet: route53.ResourceRecordSet{
 				Name:  *domain,
 				Type:  "A",
 				TTL:   *ttl,

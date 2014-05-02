@@ -1,4 +1,4 @@
-package main
+package route53
 
 import (
 	"bytes"
@@ -58,13 +58,11 @@ const route53API = "https://route53.amazonaws.com/2013-04-01"
 const route53Doc = "https://route53.amazonaws.com/doc/2013-04-01/"
 
 type Route53 struct {
-	auth   aws.Auth
 	signer *aws.Route53Signer
 }
 
-func NewRoute53(auth aws.Auth) *Route53 {
+func New(auth aws.Auth) *Route53 {
 	return &Route53{
-		auth:   auth,
 		signer: aws.NewRoute53Signer(auth),
 	}
 }
